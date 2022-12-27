@@ -1,0 +1,30 @@
+{
+  "name": "wordle",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@radix-ui/react-toast": "^1.1.2",
+    "@tabler/icons": "^1.118.0",
+    "classnames": "^2.3.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss-animate": "^1.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.17",
+    "@types/react": "^18.0.26",
+    "@types/react-dom": "^18.0.9",
+    "@vitejs/plugin-react": "^3.0.0",
+    "autoprefixer": "^10.4.13",
+    "postcss": "^8.4.20",
+    "tailwindcss": "^3.2.4",
+    "typescript": "^4.9.3",
+    "vite": "^4.0.3"
+  }
+}
