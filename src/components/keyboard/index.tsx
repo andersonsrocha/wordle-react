@@ -5,6 +5,8 @@ import { AppContext, ToastContext } from "@contexts";
 import { equals, equalsLetter, normalize, skipCol } from "@utils";
 import classNames from "classnames";
 
+import { Button } from "..";
+
 import { Board, Col, Key } from "@types";
 
 type Props = {
@@ -82,6 +84,9 @@ export function Keyboard({ reload }: Props) {
     const rowWord = values.join("").toLowerCase();
     const normalized = board.words.map((word) => normalize(word));
 
+    // remove a animação
+    row.animate = false;
+
     // verifica se a linha é válida
     if (row.cols.some((x) => x.value.length === 0)) {
       onOpenChange(true, MSG_EMPTY_BOX);
@@ -122,74 +127,15 @@ export function Keyboard({ reload }: Props) {
     reload(board);
   }, [board, reload, onOpenChange]);
 
-  const isUsed = useCallback(
-    (key: Key) => {
-      const rows = board.rows.filter((row) => row.finished);
-      const cols = rows.map((row) => row.cols).flat();
-      const keys = [...new Set(cols.map((col) => normalize(col.value)))];
-      return keys.includes(normalize(key));
-    },
-    [board]
-  );
-
-  const isCorrect = useCallback(
-    (key: Key) => {
-      const rows = board.rows.filter((row) => row.finished);
-      const cols = rows
-        .map((row) => row.cols)
-        .flat()
-        .filter((x) => equals(x.value, key));
-
-      const finished = rows.some((row) => row.finished);
-      return finished && cols.some((col) => equalsLetter(board.word, col.value, col.position));
-    },
-    [board]
-  );
-
   const generateButtonRender = (key: Key) => {
     const letters = Object.keys(keys).filter((l) => !["ENTER", "BACKSPACE"].includes(l));
 
     if (letters.includes(key)) {
-      return (
-        <button
-          key={key}
-          onClick={() => onKeyClicked(key)}
-          className={classNames(
-            "w-full h-9 md:w-11 md:h-11 border-2 border-secondary rounded-md shadow-md shadow-black/20",
-            {
-              "bg-key-primary": !isUsed(key),
-              "bg-key-disabled": isUsed(key) && !isCorrect(key),
-              "bg-success": isCorrect(key),
-            }
-          )}
-        >
-          {key}
-        </button>
-      );
-    }
-
-    if (key === "ENTER") {
-      return (
-        <button
-          key="ENTER"
-          onClick={onEnterClicked}
-          className="bg-key-primary border-2 border-secondary col-span-3 flex justify-center items-center rounded-md shadow-md shadow-black/20"
-        >
-          <IconCornerDownLeft />
-        </button>
-      );
-    }
-
-    if (key === "BACKSPACE") {
-      return (
-        <button
-          key="BACKSPACE"
-          onClick={onBackspaceClicked}
-          className="bg-key-primary w-full h-9 md:w-11 md:h-11 border-2 border-secondary flex justify-center items-center rounded-md shadow-md shadow-black/20"
-        >
-          <IconBackspace />
-        </button>
-      );
+      return <Button key={key} value={key} onKeyClicked={onKeyClicked} />;
+    } else if (key === "ENTER") {
+      return <Button.Enter key="ENTER" onKeyClicked={onEnterClicked} />;
+    } else if (key === "BACKSPACE") {
+      return <Button.Backspace key="BACKSPACE" onKeyClicked={onBackspaceClicked} />;
     }
   };
 
@@ -254,7 +200,7 @@ export function Keyboard({ reload }: Props) {
 
   return (
     <div className="font-bold text-xs md:text-xl grid grid-cols-10 gap-1 w-full md:max-w-[490px]">
-      {(Object.keys(keys) as Array<Key>).map((key: Key) => generateButtonRender(key))}
+      {(Object.keys(keys) as Array<Key>).map((key) => generateButtonRender(key))}
     </div>
   );
 }

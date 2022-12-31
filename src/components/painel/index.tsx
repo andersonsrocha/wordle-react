@@ -1,7 +1,7 @@
-import { useCallback, useContext, useEffect } from "react";
+import { useCallback, useContext } from "react";
 import { AppContext } from "@contexts";
-import classNames from "classnames";
 import { containsLetter, equalsLetter, skipCol } from "@utils";
+import classNames from "classnames";
 
 import { Board } from "@types";
 
@@ -95,43 +95,39 @@ export function Panel({ reload }: Props) {
   );
 
   return (
-    <AppContext.Consumer>
-      {({ rows, finished }) => (
-        <div className="grid grid-rows-6 gap-1">
-          {rows.map((row, rowIndex) => (
+    <div className="grid grid-rows-6 gap-1">
+      {board.rows.map((row, rowIndex) => (
+        <div
+          key={rowIndex}
+          onAnimationEnd={() => onRowAnimationEnd(rowIndex)}
+          className={classNames("grid grid-cols-5 gap-1 animate-duration-700", {
+            "animate-headShake": !board.finished && row.animate,
+            "animate-delay-[1.5s] animate-tada": board.finished && row.active,
+          })}
+        >
+          {row.cols.map((col, index) => (
             <div
-              key={rowIndex}
-              onAnimationEnd={() => onRowAnimationEnd(rowIndex)}
-              className={classNames("grid grid-cols-5 gap-1 animate-duration-700", {
-                "animate-headShake": !finished && row.animate,
-                "animate-delay-[1.5s] animate-tada": finished && row.active,
-              })}
+              key={index}
+              onAnimationEnd={() => onColAnimationEnd(index)}
+              onClick={() => onBoardClicked(rowIndex, index)}
+              className={classNames(
+                "h-12 w-12 flex justify-center items-center rounded-md border-2 border-secondary cursor-pointer",
+                {
+                  [addClassnameHelper(col.value, rowIndex, index)]: true,
+                  "bg-primary hover:bg-white/5": !row.finished && row.active,
+                  "bg-key-disabled": !row.active && !row.finished,
+                  "border-b-6 transition-all": col.active,
+                  "animate-duration-200 animate-pulse": !row.finished && col.animate,
+                  [delayAnimation(index, "animate-duration-700", "animate-flipY")]:
+                    row.finished && col.animate,
+                }
+              )}
             >
-              {row.cols.map((col, index) => (
-                <div
-                  key={index}
-                  onAnimationEnd={() => onColAnimationEnd(index)}
-                  onClick={() => onBoardClicked(rowIndex, index)}
-                  className={classNames(
-                    "h-12 w-12 flex justify-center items-center rounded-md border-2 border-secondary cursor-pointer",
-                    {
-                      [addClassnameHelper(col.value, rowIndex, index)]: true,
-                      "bg-primary hover:bg-white/5": !row.finished && row.active,
-                      "bg-key-disabled": !row.active && !row.finished,
-                      "border-b-6 transition-all": col.active,
-                      "animate-duration-200 animate-pulse": !row.finished && col.animate,
-                      [delayAnimation(index, "animate-duration-700", "animate-flipY")]:
-                        row.finished && col.animate,
-                    }
-                  )}
-                >
-                  {col.value}
-                </div>
-              ))}
+              {col.value}
             </div>
           ))}
         </div>
-      )}
-    </AppContext.Consumer>
+      ))}
+    </div>
   );
 }

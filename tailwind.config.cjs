@@ -14,8 +14,8 @@ module.exports = withAnimations({
       colors: {
         primary: "#355764",
         secondary: "#1d333d",
-        success: "#73d13d",
-        warning: "#ffec3d",
+        success: "#52c41a",
+        warning: "#fa8c16",
         error: "#ff4d4f",
         key: {
           primary: "#ffffff33",

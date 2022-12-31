@@ -14,7 +14,7 @@ export const getRandomWord = async () => {
   return words[Math.floor(Math.random() * words.length)];
 };
 
-export const normalize = (word: string) => {
+export const normalize = (word: string = "") => {
   return word.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 

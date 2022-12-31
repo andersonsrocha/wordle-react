@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.0.2",
     "@radix-ui/react-toast": "^1.1.2",
     "@tabler/icons": "^1.118.0",
     "animated-tailwindcss": "^3.3.0",

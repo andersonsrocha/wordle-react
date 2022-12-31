@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import * as ToastPrimitive from "@radix-ui/react-toast";
 
-export type ToastProps = {
+type ToastProps = {
   text?: ReactNode;
   open?: boolean;
   onOpenChange?: () => void;
