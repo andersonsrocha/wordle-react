@@ -1,5 +1,7 @@
 import { WORDS_DATA_REPO_URL_V2 } from "@constants";
 
+import { Board, Col, Row } from "@types";
+
 export const getAllWords = async (len = 5) => {
   const response = await fetch(WORDS_DATA_REPO_URL_V2);
   const words = (await response.text()).split("\n");
@@ -34,4 +36,33 @@ export const containsLetter = (word: string, value: string, col: number) => {
 
 export const equals = (word: string, value: string) => {
   return normalize(word.toLowerCase()) === normalize(value.toLowerCase());
+};
+
+export const compoundBoard = (rows: number = 6, cols: number = 5) => {
+  return Array.from(Array(rows).keys()).map<Row>((row) => ({
+    active: row === 0,
+    animate: false,
+    finished: false,
+    position: row,
+    cols: Array.from(Array(cols).keys()).map<Col>((col) => ({
+      active: col === 0 && row === 0,
+      animate: false,
+      position: col,
+      value: "",
+    })),
+  }));
+};
+
+export const skipCol = (row: Row, pos: number) => {
+  const { cols } = row;
+
+  if (pos > 4) pos = 0;
+  if (pos < 0) pos = 4;
+
+  for (const i in cols) {
+    const col = cols[i];
+    col.active = Number(i) === pos;
+  }
+
+  return row;
 };

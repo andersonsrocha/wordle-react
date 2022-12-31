@@ -21,6 +21,7 @@
       "@components": ["src/components/index"],
       "@contexts": ["src/contexts/index"],
       "@utils": ["src/utils/index"],
+      "@hooks": ["src/hooks/index"],
       "@types": ["src/types/index"]
     }
   },

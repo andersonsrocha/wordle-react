@@ -1,4 +1,8 @@
 import { createContext } from "react";
 import { Board } from "@types";
 
-export const AppContext = createContext<Board>(new Board([]));
+type ToastProps = (open: boolean, text?: string) => void;
+
+export const AppContext = createContext<Board>({ rows: [], finished: false, word: "", words: [] });
+
+export const ToastContext = createContext<ToastProps>(() => {});

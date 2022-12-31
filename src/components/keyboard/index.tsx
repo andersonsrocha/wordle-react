@@ -1,74 +1,56 @@
 import { useCallback, useContext, useEffect, useMemo } from "react";
 import { IconBackspace, IconCornerDownLeft } from "@tabler/icons";
+import { MSG_EMPTY_BOX, MSG_LOSE, MSG_WON, MSG_WORD_NOT_VALID } from "@constants";
+import { AppContext, ToastContext } from "@contexts";
+import { equals, equalsLetter, normalize, skipCol } from "@utils";
 import classNames from "classnames";
-import { AppContext } from "@contexts";
-import { equals, normalize } from "@utils";
+
+import { Board, Col, Key } from "@types";
 
 type Props = {
-  reload: (value: object) => void;
+  reload: (value: Board) => void;
 };
 
 export function Keyboard({ reload }: Props) {
   const board = useContext(AppContext);
+  const onOpenChange = useContext(ToastContext);
 
-  const delay = (value: number) => {
-    switch (value) {
-      case 0:
-        return "delay-0";
-      case 1:
-        return "delay-200";
-      case 2:
-        return "delay-400";
-      case 3:
-        return "delay-600";
-      case 4:
-        return "delay-800";
-      default:
-        return "delay-0";
-    }
-  };
+  const onKeyClicked = useCallback(
+    (key: Key) => {
+      const row = board.rows.find((row) => row.active);
+      if (!row) return;
 
-  const onKeyClicked = (key: string) => {
-    const row = board.rows.find((row) => row.active);
-    if (!row) return;
+      const col = row.cols.find((col) => col.active);
+      if (!col) return;
 
-    const col = row.cols.find((col) => col.active);
-    if (!col) return;
+      col.value = key;
+      col.animate = true;
+      // pular para a próxima coluna
+      skipCol(row, col.position + 1);
+      // atualiza o tabuleiro com a mudança
+      reload(board);
+    },
+    [board, reload]
+  );
 
-    const elements = Array.from(document.querySelectorAll(".board-cell"));
-    for (const element of elements) {
-      setTimeout(() => element.classList.remove("animate-touch"), 1);
-      if (element.classList.contains("active")) {
-        setTimeout(() => element.classList.add("animate-touch"), 2);
+  const onArrowClicked = useCallback(
+    (placement: "ARROWLEFT" | "ARROWRIGHT") => {
+      const row = board.rows.find((row) => row.active);
+      if (!row) return;
+
+      const col = row.cols.find((col) => col.active);
+      if (!col) return;
+      // se for seta para esquerda ou seta para direita,
+      // move uma casa para esquerda ou para a direita
+      if (["ARROWLEFT", "ARROWRIGHT"].includes(placement)) {
+        skipCol(row, col.position + (placement === "ARROWLEFT" ? -1 : +1));
+        reload(board);
       }
-    }
+    },
+    [board, reload]
+  );
 
-    col.setValue(key);
-    row.activate(col.position + 1);
-
-    reload({});
-  };
-
-  const onArrowClicked = (placement: "ARROWLEFT" | "ARROWRIGHT") => {
-    const row = board.rows.find((row) => row.active);
-    if (!row) return;
-
-    const col = row.cols.find((col) => col.active);
-    if (!col) return;
-
-    switch (placement) {
-      case "ARROWLEFT":
-        row.activate(col.position - 1);
-        break;
-      case "ARROWRIGHT":
-        row.activate(col.position + 1);
-        break;
-    }
-
-    reload({});
-  };
-
-  const onBackspaceClicked = () => {
+  const onBackspaceClicked = useCallback(() => {
     const row = board.rows.find((row) => row.active);
     if (!row) return;
 
@@ -76,86 +58,95 @@ export function Keyboard({ reload }: Props) {
     if (!col) return;
 
     if (col.value) {
-      col.setValue("");
+      col.value = "";
     } else {
-      row.activate(col.position - 1);
-
+      skipCol(row, col.position - 1);
       const prev = row.cols.find((col) => col.active);
       if (!prev) return;
 
-      prev.setValue("");
+      prev.value = "";
     }
 
-    reload({});
-  };
+    reload(board);
+  }, [board, reload]);
 
-  const onEnterClicked = () => {
-    const { word, words, rows } = board;
+  const onEnterClicked = useCallback(() => {
+    if (board.finished) return;
+    // fecha caso esteja sendo exibida uma mensagem
+    onOpenChange(false);
 
-    const row = rows.find((row) => row.active);
+    const row = board.rows.find((row) => row.active);
     if (!row) return;
 
-    const { valid, message } = row.valid(words);
-    const element = document.querySelector(".row-active");
-    if (!valid && element) {
-      element.classList.add("animate-shake");
+    const values = row.cols.map((c) => c.value);
+    const rowWord = values.join("").toLowerCase();
+    const normalized = board.words.map((word) => normalize(word));
 
-      board.setToast({ open: true, text: message });
-      setTimeout(() => element.classList.remove("animate-shake"), 200);
+    // verifica se a linha é válida
+    if (row.cols.some((x) => x.value.length === 0)) {
+      onOpenChange(true, MSG_EMPTY_BOX);
+      row.animate = true;
 
-      reload({});
-      return;
+      return reload(board);
+    } else if (!normalized.includes(rowWord)) {
+      onOpenChange(true, MSG_WORD_NOT_VALID);
+      row.animate = true;
+
+      return reload(board);
     }
 
-    const elements = Array.from(document.querySelectorAll(".board-cell"));
-    for (const index in elements) {
-      const element = elements[index];
-      setTimeout(
-        () => element.classList.add("duration-700", "animate-flip", delay(Number(index))),
-        1
-      );
-    }
+    row.finished = true;
 
-    row.setFinished(true);
-    row.setActive(false);
-    row.clear();
+    const index = normalized.findIndex((x) => x === rowWord);
+    const letters = board.words[index].toUpperCase().split("") as Array<Key>;
+    row.cols = letters.map<Col>((letter, index) => {
+      return { active: false, value: letter, position: index, animate: true };
+    });
 
-    const won = equals(word, row.cols.map((c) => c.value).join(""));
-    if (won) board.setToast({ open: true, text: "Uhuu, Você acertou! 🎉" });
-
-    if (!won) {
+    const concluded = equals(board.word, row.cols.map((c) => c.value).join(""));
+    if (concluded) {
+      board.finished = concluded;
+      onOpenChange(true, MSG_WON);
+    } else {
+      row.active = false;
       const next = board.rows[row.position + 1];
       if (next) {
-        next.setActive(true);
-        next.activate(0);
-        board.setRow(next, row.position + 1);
+        next.active = true;
+        // ativa a primera celula do tabuleiro
+        skipCol(next, 0);
       } else {
-        board.setToast({ open: true, text: `A palavra correta era: ${word} 🥲` });
+        onOpenChange(true, MSG_LOSE(board.word));
       }
     }
 
-    reload({});
-  };
+    reload(board);
+  }, [board, reload, onOpenChange]);
 
-  const isUsed = (key: string) => {
-    const rows = board.rows.filter((row) => row.finished);
-    const cols = rows.map((row) => row.cols).flat();
-    const keys = [...new Set(cols.map((col) => normalize(col.value)))];
-    return keys.includes(normalize(key));
-  };
+  const isUsed = useCallback(
+    (key: Key) => {
+      const rows = board.rows.filter((row) => row.finished);
+      const cols = rows.map((row) => row.cols).flat();
+      const keys = [...new Set(cols.map((col) => normalize(col.value)))];
+      return keys.includes(normalize(key));
+    },
+    [board]
+  );
 
-  const isCorrect = (key: string) => {
-    const rows = board.rows.filter((row) => row.finished);
-    const cols = rows
-      .map((row) => row.cols)
-      .flat()
-      .filter((x) => equals(x.value, key));
+  const isCorrect = useCallback(
+    (key: Key) => {
+      const rows = board.rows.filter((row) => row.finished);
+      const cols = rows
+        .map((row) => row.cols)
+        .flat()
+        .filter((x) => equals(x.value, key));
 
-    const finished = rows.some((row) => row.finished);
-    return finished && cols.some((col) => col.correct(board.word));
-  };
+      const finished = rows.some((row) => row.finished);
+      return finished && cols.some((col) => equalsLetter(board.word, col.value, col.position));
+    },
+    [board]
+  );
 
-  const generateButtonRender = (key: string) => {
+  const generateButtonRender = (key: Key) => {
     const letters = Object.keys(keys).filter((l) => !["ENTER", "BACKSPACE"].includes(l));
 
     if (letters.includes(key)) {
@@ -202,7 +193,7 @@ export function Keyboard({ reload }: Props) {
     }
   };
 
-  const keys = useMemo<Record<string, Function>>(
+  const keys = useMemo<Record<Key, Function>>(
     () => ({
       Q: onKeyClicked,
       W: onKeyClicked,
@@ -249,10 +240,10 @@ export function Keyboard({ reload }: Props) {
           onArrowClicked(key);
           break;
         default:
-          keys[key]?.(key);
+          keys[key as Key]?.(key);
       }
     },
-    [keys, onKeyClicked]
+    [keys]
   );
 
   useEffect(() => {
@@ -262,8 +253,8 @@ export function Keyboard({ reload }: Props) {
   }, [listenerKeyup]);
 
   return (
-    <div className="font-bold text-xs md:text-xl grid grid-cols-10 gap-1 max-w-xs md:max-w-[490px]">
-      {Object.keys(keys).map((key) => generateButtonRender(key))}
+    <div className="font-bold text-xs md:text-xl grid grid-cols-10 gap-1 w-full md:max-w-[490px]">
+      {(Object.keys(keys) as Array<Key>).map((key: Key) => generateButtonRender(key))}
     </div>
   );
 }
